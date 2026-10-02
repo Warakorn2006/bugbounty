@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($stmt->execute()) {
                 log_action('register_success', $stmt->insert_id, "Registered as $role");
-                $success = 'Registration successful! You can now <a href="' . BASE_URL . '/public/login.php">log in</a>.';
+                $success = 'Registration successful! You can now <a href="login.php">log in</a>.';
             } else {
                 $error = 'Registration failed due to a system error.';
             }
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
             <?php endif; ?>
             <p style="text-align:center;margin-top:1.5rem;color:var(--text-secondary);">
-                Already have an account? <a href="<?php echo BASE_URL; ?>/public/login.php">Log in</a>
+                Already have an account? <a href="login.php">Log in</a>
             </p>
         </div>
     </div>

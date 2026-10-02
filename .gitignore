@@ -22,3 +22,6 @@ Thumbs.db
 # Deployment zip files
 *.zip
 bugbounty_deploy*.sql
+
+# Credentials and Scripts
+upload_ftp.*
