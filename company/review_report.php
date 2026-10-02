@@ -30,23 +30,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $comment = trim($_POST['comment']);
         
         if ($action === 'approve') {
-            $points = (int)$_POST['points'];
-            if ($points <= 0) $error = "Points must be > 0";
-            else {
-                $conn->begin_transaction();
-                try {
-                    // Update report
-                    $conn->query("UPDATE reports SET status = 'Resolved', points_awarded = $points, company_comment = '" . $conn->real_escape_string($comment) . "' WHERE id = $report_id");
-                    // Award points
-                    $conn->query("UPDATE users SET points = points + $points WHERE id = {$report['reporter_id']}");
-                    
-                    $conn->commit();
-                    log_action('report_resolved', $company_id, "Report ID: $report_id, Points: $points");
-                    $success = "Report approved and $points points awarded!";
-                    $report['status'] = 'Resolved';
-                } catch (Exception $e) {
-                    $conn->rollback();
-                    $error = "System error occurred.";
+            // Prevent duplicate reward: only allow approve if still Pending/Triaged
+            if ($report['status'] !== 'Pending' && $report['status'] !== 'Triaged') {
+                $error = "This report has already been processed (status: {$report['status']}).";
+            } else {
+                $points = (int)$_POST['points'];
+                if ($points <= 0) $error = "Points must be > 0";
+                else {
+                    $conn->begin_transaction();
+                    try {
+                        // Update report (with status guard in WHERE to prevent race condition)
+                        $stmt_upd = $conn->prepare("UPDATE reports SET status = 'Resolved', points_awarded = ?, company_comment = ? WHERE id = ? AND status IN ('Pending', 'Triaged')");
+                        $stmt_upd->bind_param("isi", $points, $comment, $report_id);
+                        $stmt_upd->execute();
+                        
+                        if ($stmt_upd->affected_rows === 0) {
+                            throw new Exception("Report already processed (concurrent request).");
+                        }
+                        
+                        // Award points
+                        $stmt_pts = $conn->prepare("UPDATE users SET points = points + ? WHERE id = ?");
+                        $stmt_pts->bind_param("ii", $points, $report['reporter_id']);
+                        $stmt_pts->execute();
+                        
+                        $conn->commit();
+                        log_action('report_resolved', $company_id, "Report ID: $report_id, Points: $points");
+                        $success = "Report approved and $points points awarded!";
+                        $report['status'] = 'Resolved';
+                    } catch (Exception $e) {
+                        $conn->rollback();
+                        $error = "System error occurred: " . e($e->getMessage());
+                    }
                 }
             }
         } elseif ($action === 'reject' || $action === 'duplicate') {

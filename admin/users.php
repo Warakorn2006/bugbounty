@@ -1,18 +1,19 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_role('admin');
 
 $search = $_GET['search'] ?? '';
 
-$sql = "SELECT * FROM users WHERE role != 'admin'";
-if ($search) {
-    $search_esc = $conn->real_escape_string($search);
-    $sql .= " AND (username LIKE '%$search_esc%' OR email LIKE '%$search_esc%')";
+if (!empty($search)) {
+    $stmt = $conn->prepare("SELECT * FROM users WHERE role != 'admin' AND (username LIKE ? OR email LIKE ?) ORDER BY created_at DESC");
+    $search_like = "%$search%";
+    $stmt->bind_param("ss", $search_like, $search_like);
+    $stmt->execute();
+    $users = $stmt->get_result();
+} else {
+    $users = $conn->query("SELECT * FROM users WHERE role != 'admin' ORDER BY created_at DESC");
 }
-$sql .= " ORDER BY created_at DESC";
-
-$users = $conn->query($sql);
 ?>
 <!DOCTYPE html>
 <html lang="en">

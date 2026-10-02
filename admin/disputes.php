@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_role('admin');
@@ -11,20 +11,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dispute_id'])) {
         
         $conn->begin_transaction();
         try {
-            // Get dispute info
-            $stmt = $conn->prepare("SELECT report_id, user_id FROM disputes WHERE id = ?");
+            // Get dispute info (including status to prevent double-processing)
+            $stmt = $conn->prepare("SELECT report_id, user_id, status FROM disputes WHERE id = ?");
             $stmt->bind_param("i", $did);
             $stmt->execute();
             $dis = $stmt->get_result()->fetch_assoc();
             
+            // Prevent duplicate resolution
+            if (!$dis || $dis['status'] !== 'open') {
+                throw new Exception("Dispute not found or already resolved.");
+            }
+            
             if ($action === 'resolve_approve') {
                 $points = (int)$_POST['award_points'];
-                // Update report
-                $conn->query("UPDATE reports SET status = 'Resolved', points_awarded = $points WHERE id = {$dis['report_id']}");
-                // Give points
-                $conn->query("UPDATE users SET points = points + $points WHERE id = {$dis['user_id']}");
+                // Update report with prepared statement + status guard
+                $stmt_rpt = $conn->prepare("UPDATE reports SET status = 'Resolved', points_awarded = ? WHERE id = ? AND status NOT IN ('Resolved')");
+                $stmt_rpt->bind_param("ii", $points, $dis['report_id']);
+                $stmt_rpt->execute();
+                
+                if ($stmt_rpt->affected_rows > 0) {
+                    // Only give points if report was actually updated (not already resolved)
+                    $stmt_pts = $conn->prepare("UPDATE users SET points = points + ? WHERE id = ?");
+                    $stmt_pts->bind_param("ii", $points, $dis['user_id']);
+                    $stmt_pts->execute();
+                }
+                
                 // Close dispute
-                $stmt2 = $conn->prepare("UPDATE disputes SET status = 'resolved', admin_note = ? WHERE id = ?");
+                $stmt2 = $conn->prepare("UPDATE disputes SET status = 'resolved', admin_note = ? WHERE id = ? AND status = 'open'");
                 $stmt2->bind_param("si", $note, $did);
                 $stmt2->execute();
                 
@@ -32,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dispute_id'])) {
                 $_SESSION['flash_msg'] = "Dispute resolved in favor of user.";
             } else {
                 // Close dispute
-                $stmt2 = $conn->prepare("UPDATE disputes SET status = 'resolved', admin_note = ? WHERE id = ?");
+                $stmt2 = $conn->prepare("UPDATE disputes SET status = 'resolved', admin_note = ? WHERE id = ? AND status = 'open'");
                 $stmt2->bind_param("si", $note, $did);
                 $stmt2->execute();
                 log_action('dispute_resolved_reject', $_SESSION['user_id'], "Dispute ID: $did");
@@ -41,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dispute_id'])) {
             $conn->commit();
         } catch (Exception $e) {
             $conn->rollback();
+            $_SESSION['flash_msg'] = "Error: " . $e->getMessage();
         }
     }
     header("Location: " . BASE_URL . "/admin/disputes.php");

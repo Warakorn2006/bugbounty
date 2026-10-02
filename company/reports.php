@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_role('company');
 
@@ -11,15 +11,28 @@ $sql = "
     FROM reports r 
     JOIN campaigns c ON r.campaign_id = c.id 
     JOIN users u ON r.user_id = u.id 
-    WHERE c.company_id = $company_id
+    WHERE c.company_id = ?
 ";
+$params = [$company_id];
+$types = "i";
 
-if ($status_filter) { $sql .= " AND r.status = '" . $conn->real_escape_string($status_filter) . "'"; }
-if ($severity_filter) { $sql .= " AND r.severity = '" . $conn->real_escape_string($severity_filter) . "'"; }
+if ($status_filter) {
+    $sql .= " AND r.status = ?";
+    $params[] = $status_filter;
+    $types .= "s";
+}
+if ($severity_filter) {
+    $sql .= " AND r.severity = ?";
+    $params[] = $severity_filter;
+    $types .= "s";
+}
 
 $sql .= " ORDER BY CASE WHEN r.status = 'Pending' THEN 1 WHEN r.status = 'Triaged' THEN 2 ELSE 3 END, r.created_at DESC";
 
-$reports = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+$stmt->bind_param($types, ...$params);
+$stmt->execute();
+$reports = $stmt->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="en">

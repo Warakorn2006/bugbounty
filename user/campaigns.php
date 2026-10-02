@@ -1,16 +1,18 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_role('user');
 
 $search = $_GET['search'] ?? '';
 
-$sql = "SELECT c.*, u.company_name FROM campaigns c JOIN users u ON c.company_id = u.id WHERE c.status='active'";
 if (!empty($search)) {
-    $search_esc = $conn->real_escape_string($search);
-    $sql .= " AND (c.title LIKE '%$search_esc%' OR c.description LIKE '%$search_esc%' OR u.company_name LIKE '%$search_esc%')";
+    $stmt = $conn->prepare("SELECT c.*, u.company_name FROM campaigns c JOIN users u ON c.company_id = u.id WHERE c.status='active' AND (c.title LIKE ? OR c.description LIKE ? OR u.company_name LIKE ?) ORDER BY c.created_at DESC");
+    $search_like = "%$search%";
+    $stmt->bind_param("sss", $search_like, $search_like, $search_like);
+    $stmt->execute();
+    $campaigns = $stmt->get_result();
+} else {
+    $campaigns = $conn->query("SELECT c.*, u.company_name FROM campaigns c JOIN users u ON c.company_id = u.id WHERE c.status='active' ORDER BY c.created_at DESC");
 }
-$sql .= " ORDER BY c.created_at DESC";
-$campaigns = $conn->query($sql);
 ?>
 <!DOCTYPE html>
 <html lang="en">
