@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
@@ -19,7 +19,7 @@ $res = $conn->query("SELECT * FROM rewards ORDER BY points_required ASC");
         <div class="nav-links">
             <a href="<?php echo BASE_URL; ?>/public/index.php">Home</a>
             <?php if(isset($_SESSION['user_id'])): ?>
-                <a href="/<?php echo $_SESSION['role']; ?>/dashboard.php" class="btn btn-primary">Dashboard</a>
+                <a href="<?php echo BASE_URL; ?>/<?php echo $_SESSION['role']; ?>/dashboard.php" class="btn btn-primary">Dashboard</a>
             <?php else: ?>
                 <a href="<?php echo BASE_URL; ?>/public/login.php" class="btn btn-primary">Login</a>
             <?php endif; ?>

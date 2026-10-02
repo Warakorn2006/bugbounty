@@ -35,7 +35,7 @@ $campaigns = $conn->query("SELECT c.*, u.company_name FROM campaigns c JOIN user
         <div class="nav-brand">🐛 BugBounty<span>TH</span></div>
         <div class="nav-links">
             <?php if(isset($_SESSION['user_id'])): ?>
-                <a href="/<?php echo e($_SESSION['role']); ?>/dashboard.php" class="btn btn-primary">Dashboard</a>
+                <a href="<?php echo BASE_URL; ?>/<?php echo e($_SESSION['role']); ?>/dashboard.php" class="btn btn-primary">Dashboard</a>
             <?php else: ?>
                 <a href="<?php echo BASE_URL; ?>/public/login.php">Login</a>
                 <a href="<?php echo BASE_URL; ?>/public/register.php" class="btn btn-primary">Sign Up</a>

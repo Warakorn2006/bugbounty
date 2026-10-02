@@ -1,11 +1,11 @@
-﻿<?php
+<?php
 session_start();
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: /" . $_SESSION['role'] . "/dashboard.php");
+    header("Location: " . BASE_URL . "/" . $_SESSION['role'] . "/dashboard.php");
     exit;
 }
 
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($stmt->execute()) {
                 log_action('register_success', $stmt->insert_id, "Registered as $role");
-                $success = 'Registration successful! You can now <a href="<?php echo BASE_URL; ?>/public/login.php">log in</a>.';
+                $success = 'Registration successful! You can now <a href="' . BASE_URL . '/public/login.php">log in</a>.';
             } else {
                 $error = 'Registration failed due to a system error.';
             }

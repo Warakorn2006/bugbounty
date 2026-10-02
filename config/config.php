@@ -9,7 +9,7 @@
 // ============================
 // หากใช้ XAMPP: define('BASE_URL', '/bugbounty');
 // หากใช้ InfinityFree (root domain): define('BASE_URL', '');
-define('BASE_URL', '/bugbounty');
+define('BASE_URL', '');
 
 // ============================
 // Asset Path Helper
