@@ -1,0 +1,31 @@
+# Dependencies & Package managers
+vendor/
+node_modules/
+
+# Uploaded files (user content)
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+# Temporary files
+*.log
+*.tmp
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Deployment zip files
+*.zip
+bugbounty_deploy*.sql
+
+# Credentials and Scripts
+upload_ftp.*
+*.ps1
+unzip.php
+clean.php
+dbg.php
